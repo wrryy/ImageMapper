@@ -47,7 +47,7 @@ public class IphoneRename {
             String pathName = buildNewPath(file);
             File temp = new File(pathName);
             boolean renamed = file.renameTo(temp);
-            if(!renamed){
+            if (!renamed) {
                 System.out.println(file.getName());
 //                rename(file);
             }
@@ -74,7 +74,7 @@ public class IphoneRename {
      * @param file
      * @return file creation's date
      */
-   private static String getFileDate(File file) {
+    public static String getFileDate(File file) {
         String dateString = null;
         try {
             Metadata metadata = ImageMetadataReader.readMetadata(file);
@@ -93,51 +93,78 @@ public class IphoneRename {
         if (dateString == null) {
             dateString = parseFileForData(file);
         }
+        if (dateString == null) {
+            dateString = parseFileForData(file);
+        }
         return dateString;
     }
 
-   private static String parseFileForData(File file) {
-       System.out.println(file.getName());
-        String dateString = null;
-        long size = file.getTotalSpace();
-        try (RandomAccessFile accessFile = new RandomAccessFile(file, "r")) {
-            MappedByteBuffer buffer = accessFile.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, file.length());
-            int c = 0;
-            byte[] s = new byte[20];
-            Pattern pattern = Pattern.compile("(\\d{4}:\\d{2}:\\d{2} \\d{2}:\\d{2}:\\d{2})");
-            try{
-
-            for (int i = 0; i < file.getTotalSpace()-2; i++) {
-
-                s[c] = buffer.get(i);
-                c++;
-                if (c == 20) {
-                    String part = new String(s, Charset.forName("UTF-8"));
-                    Matcher matcher = pattern.matcher(part);
-                    if (matcher.find()) {
-                        System.out.println(matcher.group(1));
-                        return matcher.group(1);
-                    }
-                    s = new byte[20];
-                    c = 0;
-                }
-            }
-            }catch (IndexOutOfBoundsException e) {
-                e.printStackTrace();
-            }} catch (IOException e) {
+    public static String getEXIF(File file) {
+          String dateString = null;
+        try {
+            Metadata metadata = ImageMetadataReader.readMetadata(file);
+            ExifSubIFDDirectory directory = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
+            System.out.println(directory.getDate(ExifSubIFDDirectory.TAG_DATETIME_DIGITIZED));
+            System.out.println(directory.getDate(ExifSubIFDDirectory.TAG_TIME_ZONE_OFFSET));
+            System.out.println(directory.getDate(ExifSubIFDDirectory.TAG_TIME_ZONE_OFFSET_TIFF_EP));
+//            Date date = directory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
+//            dateString = new SimpleDateFormat(DATE_FORMAT).format(date);
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return dateString;
     }
 
-    private static String buildNewPath(File file) {
-        StringBuilder sb = new StringBuilder();
-        return sb.append(file.getParent())
-                .append("\\")
-                .append(getFileDate(file))
-                .append(".")
-                .append(getFileExt(file))
-                .toString();
+        private static String parseFileForData (File file){
+            String dateString = null;
+            try (RandomAccessFile accessFile = new RandomAccessFile(file, "r")) {
+                MappedByteBuffer buffer = accessFile.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, file.length());
+                int c = 0;
+                int size = 200;
+                int restrict = 0;
+                byte[] s = new byte[size];
+                Pattern patternFull = Pattern.compile("(\\d{4}:\\d{2}:\\d{2} \\d{2}:\\d{2}:\\d{2})");
+                Pattern pattern1 = Pattern.compile("(\\d{4})");
+                try {
+
+                    for (int i = 0; i < file.getTotalSpace() - 2; i++) {
+
+                        s[c] = buffer.get(i);
+                        c++;
+                        if (c == size) {
+                            String part = new String(s, Charset.forName("UTF-8"));
+                            System.out.println(part);
+                            Matcher matcher = patternFull.matcher(part);
+                            if (matcher.find()) {
+                                System.out.println(matcher.group(1));
+                                return matcher.group(1);
+                            }
+                            s = new byte[size];
+                            i -= 20;
+                            c = 0;
+                            restrict++;
+                        }
+                        //safety break
+                        if (restrict == 3) {
+                            break;
+                        }
+                    }
+                } catch (IndexOutOfBoundsException e) {
+                    e.printStackTrace();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return dateString;
+        }
+        private static String buildNewPath (File file){
+            StringBuilder sb = new StringBuilder();
+            return sb.append(file.getParent())
+                    .append("\\")
+                    .append(getFileDate(file))
+                    .append(".")
+                    .append(getFileExt(file))
+                    .toString();
+        }
     }
-}
 
