@@ -5,9 +5,6 @@ import java.util.Objects;
 
 public class FileSniffer {
 
-    //TODO usunac po wprowadzeniu WW
-    private FileRenamer renamer = new FileRenamer();
-
     /**
      * Just a wrapper.
      *
@@ -27,8 +24,13 @@ public class FileSniffer {
             if (file.isDirectory()) {
                 readFolder(file);
             } else {
-                //TODO wielowatkowo ~5 rename'ow naraz
-                renamer.rename(file);
+                //TODO wielowatkowo ~5 doRename'ow naraz
+                try {
+                    FileModifier renamer = FileModifier.getInstance(file);
+                    renamer.workTheFile();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
